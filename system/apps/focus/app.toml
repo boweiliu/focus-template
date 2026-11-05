@@ -1,0 +1,7 @@
+name = "focus"
+display_name = "Focus"
+description = "One screen: the most important thing to work on now and its first small steps, with a side screen where an agent helps choose and break it down"
+icon = "icon.svg"
+priority = "user"
+program = "focus"
+stop_when_no_windows = false

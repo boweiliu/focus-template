@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Focus</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main class="focus-page">
+  <section id="focus" class="split hidden">
+    <div class="lead">
+      <p class="label">Most important now</p>
+      <p class="thing" id="thing"></p>
+    </div>
+    <div class="next">
+      <p class="label">First steps</p>
+      <ol id="steps"></ol>
+      <p id="all-done" class="hidden">All steps done. <a href="/setup">Choose the next thing</a></p>
+      <p id="problem" class="problem hidden"></p>
+    </div>
+  </section>
+  <section id="empty" class="hidden">
+    <div class="lead">
+      <p class="thing">Nothing chosen yet.</p>
+      <p><a href="/setup">Choose one thing</a></p>
+    </div>
+  </section>
+  <footer id="footer" class="hidden"><a href="/setup" id="change">Change</a><span id="copy-note" class="hidden">View-only copy. <a id="real-link" href="#">Open the real one</a></span></footer>
+</main>
+<script>
+  let state = null;
+  let splitting = null;
+
+  function show(id, visible) { document.getElementById(id).classList.toggle("hidden", !visible); }
+
+  function problem(text) {
+    const el = document.getElementById("problem");
+    el.textContent = text || "";
+    el.classList.toggle("hidden", !text);
+  }
+
+  async function call(method, url) {
+    const response = await fetch(url, { method });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(body.detail || "Something went wrong. Reload the page.");
+    return body;
+  }
+
+  function firstOpen(list) {
+    for (const step of list) {
+      if (step.children && step.children.length) { const inner = firstOpen(step.children); if (inner) return inner; continue; }
+      if (!step.done) return step;
+    }
+    return null;
+  }
+
+  function leavesDone(list) {
+    return list.every((s) => (s.children && s.children.length ? leavesDone(s.children) : s.done));
+  }
+
+  async function toggle(step) {
+    step.done = !step.done;  // shown at once; the saved copy follows
+    render();
+    try { state = await call("POST", `/api/steps/${step.id}/toggle`); problem(""); }
+    catch (error) { step.done = !step.done; problem(error.message); }
+    render();
+  }
+
+  async function splitStep(step) {
+    splitting = step.id;
+    render();
+    try { state = await call("POST", `/api/steps/${step.id}/split`); problem(""); }
+    catch (error) { problem(error.message); }
+    splitting = null;
+    render();
+  }
+
+  function build(list, parent, next, depth) {
+    for (const step of list) {
+      const li = document.createElement("li");
+      li.id = `step-${step.id}`;
+      const text = document.createElement("span");
+      text.className = "words";
+      text.textContent = step.text;
+      li.appendChild(text);
+      const children = step.children || [];
+      if (children.length) {
+        if (leavesDone(children)) li.classList.add("done");
+        const ol = document.createElement("ol");
+        build(children, ol, next, depth + 1);
+        li.appendChild(ol);
+      } else {
+        if (step.done) li.classList.add("done");
+        li.addEventListener("click", (event) => {
+          if (event.target.closest(".smaller") || splitting || viewOnly()) return;
+          event.stopPropagation();
+          toggle(step);
+        });
+        if (step === next && depth < 3 && !viewOnly()) {
+          const smaller = document.createElement("button");
+          smaller.className = "text smaller";
+          smaller.id = "too-big";
+          if (splitting === step.id) {
+            smaller.textContent = "Breaking it down...";
+            smaller.disabled = true;
+          } else {
+            smaller.textContent = "Too big";
+            smaller.addEventListener("click", (event) => { event.stopPropagation(); splitStep(step); });
+          }
+          li.appendChild(smaller);
+        }
+      }
+      parent.appendChild(li);
+    }
+  }
+
+  function viewOnly() { return !!(state && state.mirror); }
+
+  function render() {
+    const current = state && state.current;
+    const mirror = state && state.mirror;
+    show("change", !mirror);
+    show("copy-note", !!mirror);
+    if (mirror && mirror.url) document.getElementById("real-link").href = mirror.url;
+    else if (mirror) document.getElementById("real-link").removeAttribute("href");
+    if (mirror) show("footer", true);
+    show("focus", !!current);
+    if (!mirror) show("footer", !!current);
+    show("empty", !current);
+    if (!current) return;
+    document.getElementById("thing").textContent = current.thing;
+    const next = firstOpen(current.steps);
+    const root = document.getElementById("steps");
+    root.replaceChildren();
+    build(current.steps, root, next, 0);
+    show("all-done", next === null);
+  }
+
+  async function load() {
+    try { state = await call("GET", "/api/state"); }
+    catch (error) { state = null; }
+    render();
+  }
+
+  load();
+  // Another window or device may have changed it.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden && !splitting) load(); });
+</script>
+<script type="module">
+  import { connectToShell } from "/_static/app_contract.js";
+  import { installElementContextMenu } from "/_static/context_menu.js";
+  let handshake = null;
+  const connection = connectToShell({
+    onHandshake: (received) => { handshake = received; connection.location(location.pathname + location.search, document.title); },
+  });
+  installElementContextMenu({ connection, handshake: () => handshake });
+</script>
+</body>
+</html>

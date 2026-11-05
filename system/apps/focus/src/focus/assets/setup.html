@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Focus - choose</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<main>
+  <h1><a href="/">Back</a></h1>
+  <p id="copy-note" class="hidden">View-only copy. <a id="real-link" href="#">Change it on the real one</a></p>
+  <div class="split">
+  <div class="lead">
+    <div id="talk"></div>
+    <div id="compose">
+      <p class="label" id="compose-label">What is on your mind? List everything, in any order.</p>
+      <textarea id="input"></textarea>
+      <div class="row">
+        <button class="text" id="send">Help me choose</button>
+        <button class="text hidden" id="restart">Start over</button>
+      </div>
+    </div>
+  </div>
+  <div class="next">
+    <div id="draft" class="draft">
+      <h2 class="first">Most important now</h2>
+      <textarea class="line" id="draft-thing" placeholder="One thing, starting with a verb"></textarea>
+      <h2>First steps</h2>
+      <div id="draft-steps"></div>
+      <div class="row">
+        <button class="text" id="add-step">Add a step</button>
+        <button class="text" id="smaller-all">Make steps smaller</button>
+      </div>
+      <div class="row"><button class="text" id="save">Save</button></div>
+      <p id="problem" class="problem hidden"></p>
+    </div>
+    <div id="before" class="hidden">
+      <h2>Before</h2>
+      <ul class="history" id="history"></ul>
+    </div>
+  </div>
+  </div>
+</main>
+<script>
+  const CONVERSATION_KEY = "focus-conversation";
+  const talk = document.getElementById("talk");
+  const input = document.getElementById("input");
+  const sendButton = document.getElementById("send");
+  let conversationId = sessionStorage.getItem(CONVERSATION_KEY);
+  let busy = false;
+  let copyMode = false;  // a view-only copy of the real one: nothing can be edited here
+
+  function problem(text) {
+    const el = document.getElementById("problem");
+    el.textContent = text || "";
+    el.classList.toggle("hidden", !text);
+  }
+
+  async function call(method, url, body) {
+    const response = await fetch(url, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : {},
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const answer = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(answer.detail || "Something went wrong. Try again.");
+    return answer;
+  }
+
+  function say(who, text) {
+    const div = document.createElement("div");
+    div.className = "turn";
+    const name = document.createElement("p");
+    name.className = "who";
+    name.textContent = who;
+    const body = document.createElement("p");
+    body.textContent = text;
+    div.append(name, body);
+    talk.appendChild(div);
+    return div;
+  }
+
+  function talking(started) {
+    document.getElementById("compose-label").textContent = started
+      ? "Your answer"
+      : "What is on your mind? List everything, in any order.";
+    sendButton.textContent = started ? "Send" : "Help me choose";
+    document.getElementById("restart").classList.toggle("hidden", !started);
+  }
+
+  // Edit boxes grow to fit their words; Enter starts the next step instead of a new line.
+  function fit(field) { field.style.height = "auto"; field.style.height = `${field.scrollHeight + 2}px`; }
+
+  function lineBox(field, onEnter) {
+    field.rows = 1;
+    field.addEventListener("input", () => fit(field));
+    field.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); onEnter(field); }
+    });
+  }
+
+  function stepField(text, after) {
+    const field = document.createElement("textarea");
+    field.className = "line";
+    field.value = text || "";
+    field.placeholder = "A small first step";
+    field.readOnly = copyMode;
+    lineBox(field, (f) => stepField("", f).focus());
+    const box = document.getElementById("draft-steps");
+    if (after) after.after(field); else box.appendChild(field);
+    fit(field);
+    return field;
+  }
+
+  function setDraft(thing, steps) {
+    const thingField = document.getElementById("draft-thing");
+    thingField.value = thing || "";
+    fit(thingField);
+    document.getElementById("draft-steps").replaceChildren();
+    const list = steps && steps.length ? steps : ["", "", ""];
+    for (const text of list) stepField(text);
+  }
+
+  function readDraft() {
+    return {
+      thing: document.getElementById("draft-thing").value.trim(),
+      steps: [...document.querySelectorAll("#draft-steps textarea")].map((f) => f.value.trim()).filter(Boolean),
+    };
+  }
+
+  function formatDay(seconds) {
+    return new Date(seconds * 1000).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
+
+  function showHistory(history) {
+    const list = document.getElementById("history");
+    list.replaceChildren();
+    for (const item of history.slice(0, 30)) {
+      const li = document.createElement("li");
+      li.id = `past-${item.id}`;
+      const outcome = item.outcome === "done" ? "Done." : "Replaced.";
+      li.append(`${formatDay(item.created_at)}: ${item.thing} ${outcome}`);
+      if (item.conversation_id) {
+        const link = document.createElement("a");
+        link.href = `/api/conversations/${item.conversation_id}`;
+        link.className = "quiet";
+        link.textContent = "talk";
+        li.append(" ", link);
+      }
+      list.appendChild(li);
+    }
+    document.getElementById("before").classList.toggle("hidden", history.length === 0);
+  }
+
+  async function send() {
+    const text = input.value.trim();
+    if (!text || busy) return;
+    busy = true;
+    problem("");
+    say("You", text);
+    input.value = "";
+    talking(true);
+    const waiting = say("Helper", "Thinking...");
+    sendButton.disabled = true;
+    try {
+      const answer = await call("POST", "/api/helper/chat", { conversation_id: conversationId, text });
+      conversationId = answer.conversation_id;
+      sessionStorage.setItem(CONVERSATION_KEY, conversationId);
+      waiting.querySelector("p:last-child").textContent = answer.reply || "Here is a start; change anything.";
+      if (answer.proposal) {
+        setDraft(answer.proposal.thing, answer.proposal.steps);
+        document.getElementById("draft").scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        input.focus();
+      }
+    } catch (error) {
+      waiting.remove();
+      input.value = text;
+      problem(error.message);
+    }
+    sendButton.disabled = false;
+    busy = false;
+  }
+
+  sendButton.addEventListener("click", send);
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) { event.preventDefault(); send(); }
+  });
+
+  document.getElementById("restart").addEventListener("click", () => {
+    conversationId = null;
+    sessionStorage.removeItem(CONVERSATION_KEY);
+    talk.replaceChildren();
+    talking(false);
+    input.focus();
+  });
+
+  lineBox(document.getElementById("draft-thing"), () => document.querySelector("#draft-steps textarea").focus());
+  window.addEventListener("resize", () => document.querySelectorAll("textarea.line").forEach(fit));
+
+  document.getElementById("add-step").addEventListener("click", () => stepField("").focus());
+
+  document.getElementById("smaller-all").addEventListener("click", async (event) => {
+    const draft = readDraft();
+    if (!draft.thing || !draft.steps.length) { problem("Write the thing and at least one step first."); return; }
+    if (busy) return;
+    busy = true;
+    const button = event.currentTarget;
+    button.textContent = "Making them smaller...";
+    button.disabled = true;
+    problem("");
+    try {
+      const answer = await call("POST", "/api/helper/smaller", { ...draft, conversation_id: conversationId });
+      setDraft(draft.thing, answer.steps);
+    } catch (error) { problem(error.message); }
+    button.textContent = "Make steps smaller";
+    button.disabled = false;
+    busy = false;
+  });
+
+  document.getElementById("save").addEventListener("click", async () => {
+    const draft = readDraft();
+    problem("");
+    try {
+      await call("POST", "/api/focus", { ...draft, conversation_id: conversationId });
+      sessionStorage.removeItem(CONVERSATION_KEY);
+      location.href = "/";
+    } catch (error) { problem(error.message); }
+  });
+
+  async function load() {
+    try {
+      const state = await call("GET", "/api/state");
+      if (state.mirror) {
+        document.getElementById("copy-note").classList.remove("hidden");
+        if (state.mirror.url) document.getElementById("real-link").href = state.mirror.url + "setup";
+        for (const id of ["compose", "add-step", "smaller-all", "save"]) document.getElementById(id).classList.add("hidden");
+        copyMode = true;
+        document.getElementById("draft-thing").readOnly = true;
+      }
+      if (state.current) {
+        setDraft(state.current.thing, state.current.steps.map((s) => s.text));
+        document.getElementById("compose-label").textContent = "Want help? Tell the helper what is on your mind.";
+      } else {
+        setDraft("", []);
+      }
+      showHistory(state.history);
+    } catch (error) { setDraft("", []); problem(error.message); }
+    if (conversationId) {
+      try {
+        const conversation = await call("GET", `/api/conversations/${conversationId}`);
+        for (const message of conversation.messages) say(message.role === "you" ? "You" : "Helper", message.text);
+        if (conversation.messages.length) talking(true);
+        const last = [...conversation.messages].reverse().find((m) => m.proposal);
+        if (last) setDraft(last.proposal.thing, last.proposal.steps);
+      } catch (error) {
+        conversationId = null;
+        sessionStorage.removeItem(CONVERSATION_KEY);
+      }
+    }
+  }
+  load();
+</script>
+<script type="module">
+  import { connectToShell } from "/_static/app_contract.js";
+  import { installElementContextMenu } from "/_static/context_menu.js";
+  let handshake = null;
+  const connection = connectToShell({
+    onHandshake: (received) => { handshake = received; connection.location(location.pathname + location.search, document.title); },
+  });
+  installElementContextMenu({ connection, handshake: () => handshake });
+</script>
+</body>
+</html>

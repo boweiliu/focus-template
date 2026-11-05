@@ -1,0 +1,96 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #fff; color: #000; }
+body {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 19px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+main {
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: max(10vh, 2rem) max(1.5rem, env(safe-area-inset-right)) 3rem max(1.5rem, env(safe-area-inset-left));
+}
+a, button.text {
+  color: inherit; font: inherit; background: none; border: 0; padding: 0;
+  text-decoration: underline; text-underline-offset: 0.2em; cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.label { font-size: 15px; margin: 0 0 0.4rem; }
+.thing { font-size: clamp(26px, 6vw, 34px); line-height: 1.25; font-weight: 600; margin: 0 0 3rem; }
+ol { margin: 0; padding: 0 0 0 2em; }
+ol ol { margin-top: 0.3rem; }
+li { padding: 0.3rem 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+li.done > .words { text-decoration: line-through; }
+/* A finger-sized target around the small text. */
+li .smaller { font-size: 15px; margin-left: 0.4rem; padding: 0.4rem 0.4rem; }
+footer { margin-top: 4rem; font-size: 15px; }
+textarea, input[type=text] {
+  width: 100%; font: inherit; color: inherit; background: #fff;
+  border: 1px solid #000; border-radius: 0; padding: 0.6rem 0.7rem;
+  -webkit-appearance: none; appearance: none;
+}
+textarea { min-height: 8rem; resize: vertical; }
+textarea.line { min-height: 0; resize: none; overflow: hidden; display: block; }
+textarea:focus, input:focus { outline: 2px solid #000; outline-offset: -2px; }
+.turn { margin: 0 0 1.4rem; }
+.turn .who { font-size: 15px; margin: 0 0 0.2rem; }
+.turn p { margin: 0; white-space: pre-wrap; }
+.row { margin: 1rem 0 0; display: flex; flex-wrap: wrap; gap: 0.6rem 1.4rem; }
+.row > * { padding: 0.3rem 0; }
+h1 { font-size: 15px; font-weight: 400; margin: 0 0 2rem; }
+h2 { font-size: 15px; font-weight: 400; margin: 3rem 0 0.6rem; }
+.draft textarea.line { margin: 0 0 0.5rem; }
+.history { list-style: none; padding: 0; font-size: 15px; }
+.history li { cursor: default; padding: 0; margin: 0 0 0.3rem; }
+.problem { font-size: 15px; margin-top: 1rem; }
+button.text:disabled { cursor: default; text-decoration: none; }
+.history .quiet { margin-left: 0.3rem; }
+.hidden { display: none !important; }
+
+/* Wide and short: a phone turned sideways, or a desktop window.
+   The thing sits on the left, the steps on the right, so nothing scrolls. */
+@media (orientation: landscape) and (min-width: 560px) {
+  main {
+    max-width: 62rem;
+    min-height: 100vh;
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-top: max(1.5rem, 6vh);
+    padding-bottom: max(1.5rem, 6vh);
+  }
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 5rem);
+    align-items: start;
+  }
+  /* Main screen: "Change" sits under the thing, so the steps can use the full height. */
+  main.focus-page {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: clamp(2rem, 6vw, 5rem);
+    align-content: center;
+  }
+  main.focus-page .split, main.focus-page #empty { display: contents; }
+  main.focus-page .lead { grid-column: 1; grid-row: 1; }
+  main.focus-page .next { grid-column: 2; grid-row: 1 / span 2; }
+  main.focus-page footer { grid-column: 1; grid-row: 2; align-self: start; margin-top: 1.5rem; }
+  .thing { font-size: clamp(24px, 3.2vw, 40px); margin-bottom: 0; }
+  footer { margin-top: clamp(1.5rem, 8vh, 4rem); }
+  h1 { margin-bottom: 1.5rem; }
+  .next h2.first, .next .hidden + h2 { margin-top: 0; }
+  textarea:not(.line) { min-height: 6rem; }
+  /* The setup screen grows as you talk; let it start near the top. */
+  main:has(#talk) { justify-content: flex-start; }
+}
+
+/* A phone turned sideways is very short: tighten everything. */
+@media (orientation: landscape) and (max-height: 500px) {
+  body { font-size: 17px; }
+  .label, footer, h1, h2, .history, li .smaller { font-size: 14px; }
+  li { padding: 0.2rem 0; }
+}

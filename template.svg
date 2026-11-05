@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 160" width="240" height="160" role="img" aria-label="Focus: one thing and its first steps">
+  <title>Focus</title>
+  <rect width="240" height="160" fill="#ffffff"/>
+  <rect x="0.5" y="0.5" width="239" height="159" fill="none" stroke="#0b292b" stroke-opacity="0.15"/>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" fill="#111111">
+    <text x="14" y="24" font-size="6.5" fill="#555555">Most important now</text>
+    <text x="14" y="42" font-size="12" font-weight="700">Pay the</text>
+    <text x="14" y="57" font-size="12" font-weight="700">power bill.</text>
+    <text x="14" y="75" font-size="6.5" text-decoration="underline">Change</text>
+    <text x="112" y="24" font-size="6.5" fill="#555555">First steps</text>
+    <text x="112" y="42" font-size="6.5" text-decoration="line-through" fill="#777777">1. Open the bank app.</text>
+    <text x="112" y="60" font-size="6.5">2. Find the amount.</text>
+    <text x="190" y="60" font-size="5.5" text-decoration="underline">Too big</text>
+    <text x="112" y="78" font-size="6.5">3. Type it in, send.</text>
+    <text x="112" y="96" font-size="6.5">4. Save the receipt.</text>
+  </g>
+  <rect x="14" y="112" width="212" height="34" fill="none" stroke="#111111" stroke-width="0.8"/>
+  <g font-family="ui-monospace, Menlo, Consolas, monospace" fill="#111111">
+    <text x="20" y="124" font-size="6" fill="#555555">Helper</text>
+    <text x="20" y="136" font-size="6">Bills come first: someone is waiting on them.</text>
+  </g>
+</svg>

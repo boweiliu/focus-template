@@ -1,54 +1,48 @@
-# Your workspace
+<p align="center">
+  <img alt="Focus" src="template.svg" width="480">
+</p>
 
-This folder is your agent's home: everything it knows, everything it builds,
-and the machinery that keeps it running.
+# Focus
 
-## Creations
+<p align="center">
+  <a href="https://studio.imbue.com/open?git_url=https://github.com/boweiliu/focus-template"><img alt="Open in Imbue Studio" height="64" src="https://img.shields.io/badge/Open%20in%20Imbue%20Studio-D8D1C0?style=for-the-badge"></a>
+</p>
 
-Broadly, in Imbue Studio you make "creations". These can be "code" (apps, skills, and
-the services behind them) or "data" (documents, images, notes).
+Didn't work? Create a Studio workspace and paste this to your agent:
+` /use-template https://github.com/boweiliu/focus-template`
 
-Imbue Studio makes this easier by defining some conventions for the common things
-you'll want to make:
+## Why you care
 
-1. an "app" - something you can open as a tab and interact with
-2. a "skill" - teaches your agent how to do work you care about. A skill that
-   is automatically run on a schedule is called an "automation": a routine
-   (see `routines/` and the Routines app; the weekly Caretaker is the
-   built-in example)
-3. some "data" - documents, images, notes, or data created by your apps and
-   skills
-4. some "customizations" - changes to any of the above. Everything in Imbue Studio
-   can be modified by you!
+One screen with the single most important thing to work on now and its first small steps, with a Claude helper that picks it and breaks it down.
 
-## What's here
+People who procrastinate stall on a long list because choosing is the hard part. Focus makes the choice for you and shows only one thing and one next step, so starting is easy.
 
-- `apps/` - Everything you can open as a tab: the built-in apps (chat, the
-  terminal, Files, the browser, System Monitor) and the apps your agent builds for you. (A shortcut
-  to `system/apps/`.)
-- `skills/` - Everything your agent knows how to do: the built-in skills and
-  the ones it has learned for you. (A shortcut to `.agents/skills/`.)
-- `routines/` - Everything that runs on a schedule, one file each; the
-  Routines app shows them. (A shortcut to `system/routines/`.)
-- `data/` - Your workspace's data: documents and project folders, files
-  you've uploaded, your agent's memories, and each app's stored data.
-- `docs/` - Guides to this workspace: what it is, how it works, and a history
-  of where it came from.
-- `system/` - The machinery that runs the workspace: the apps themselves,
-  background services, scripts, and configuration. You can look around (every
-  folder has a README), and your agent maintains it for you.
+## How to use it
 
-A few housekeeping files live alongside them:
+Open **Focus** from the desktop.
 
-- `README.md` - This file.
-- `CLAUDE.md` - The standing instructions your agent follows.
-- `pyproject.toml` and `uv.lock` - The Python project definition; the tooling
-  requires them at the top level.
+1. **Choose.** Open "Choose one thing", type what is on your mind (rent, a long overdue email, laundry) and press "Help me choose". The helper asks at most two short questions, then proposes one thing and three to five tiny first steps, with a sentence on why it comes first.
+2. **Edit and save.** Change any words, add a step, or press "Make steps smaller". Save makes it the current focus.
+3. **Work the list.** The main screen shows the one thing and its steps. Click a step to cross it out. Next to the first open step, "Too big" asks the helper to break it into two to four smaller steps, shown under it.
+4. **Look back.** "Before" on the Setup screen lists past focuses, each with the saved helper conversation and the model's exact answers.
 
-## Where things are kept safe
+Everything is kept as JSON in `data/.apps/focus/`; it needs no account and no key, only the workspace's Claude sign-in.
 
-The workspace is a git repository: code and configuration changes are
-committed as your agent works. Everything under `data/` is deliberately kept
-out of git (it can be large, personal, or both) and is protected by the
-workspace's continuous encrypted backup instead, along with the rest of the
-workspace. See `docs/` for details.
+## Ideas for making it yours
+
+- Change the helper's voice: rewrite the prompts in `helper.py` for a gentler, more playful or more blunt tone.
+- Give the steps a time box: have the helper add a minutes estimate to each step and show it on the main screen.
+- Add a "come back to it" nudge: a routine that opens Focus at a set hour and shows the current step.
+- Let a second person see your focus: add a read-only share link for a friend who keeps you accountable.
+- Use a smaller or cheaper model for splitting steps and keep the larger one for choosing.
+
+## What this is
+
+This repository is a published **Imbue Studio template**: a clean, bootable
+snapshot of what an agent built, ready to adapt into your own. It is NOT the
+generic workspace template -- it is this specific project.
+
+[`template.md`](template.md) is the full manifest -- what it is, how it
+works, what it needs to run, and what to adapt -- with the
+machine-readable half (recipe, requirements, and the environment it needs
+installed) in [`template.toml`](template.toml).
